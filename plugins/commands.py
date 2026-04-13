@@ -7,6 +7,7 @@ from platform import python_version
 from translation import Translation
 from pyrogram import Client, filters, enums, __version__ as pyrogram_version
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaDocument
+import httpx
 
 main_buttons = [[
         InlineKeyboardButton('Main Channel', url='https://t.me/dev_gagan')
@@ -84,6 +85,33 @@ async def about(bot, query):
         disable_web_page_preview=True,
         parse_mode=enums.ParseMode.HTML,
     )
+
+@Client.on_message(filters.private & filters.command(['license']))
+async def license_command(client, message):
+    if not Config.LICENSE_KEY:
+        return await message.reply_text("License key not configured.")
+    
+    try:
+        async with httpx.AsyncClient() as hclient:
+            response = await hclient.get(f"{Config.AUTH_SERVER_URL}/license/status/{Config.LICENSE_KEY}")
+            if response.status_code == 200:
+                data = response.json()
+                expiry = data.get('expiry_date')
+                status = "Active" if data.get('is_active') else "Inactive"
+                if data.get('is_locked'):
+                    status = "Locked"
+                
+                await message.reply_text(
+                    f"<b>License Status:</b>\n\n"
+                    f"<b>Key:</b> <code>{Config.LICENSE_KEY}</code>\n"
+                    f"<b>Status:</b> {status}\n"
+                    f"<b>Expiry:</b> {expiry}\n",
+                    parse_mode=enums.ParseMode.HTML
+                )
+            else:
+                await message.reply_text("Failed to fetch license details from server.")
+    except Exception as e:
+        await message.reply_text(f"Error connecting to auth server: {e}")
 
 @Client.on_callback_query(filters.regex(r'^status'))
 async def status(bot, query):

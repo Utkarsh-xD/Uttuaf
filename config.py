@@ -8,6 +8,8 @@ class Config:
     DATABASE_URI = environ.get("DATABASE", "mongodb+srv://chhjgjkkjhkjhkjh@cluster0.xowzpr4.mongodb.net/")
     DATABASE_NAME = environ.get("DATABASE_NAME", "forward-bot")
     BOT_OWNER_ID = [int(id) for id in environ.get("BOT_OWNER_ID", '6964148334').split()]
+    LICENSE_KEY = environ.get("LICENSE_KEY", "")
+    AUTH_SERVER_URL = environ.get("AUTH_SERVER_URL", "http://auth-server:8000")
 
 class temp(object): 
     lock = {}

@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: authdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d authdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-server:
+    build: ./auth-server
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/authdb
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ADMIN_BOT_TOKEN: ${ADMIN_BOT_TOKEN}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  admin-panel:
+    build: ./admin-panel
+    environment:
+      NEXT_PUBLIC_AUTH_SERVER_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-server
+
+  bot:
+    build: .
+    environment:
+      API_ID: ${API_ID}
+      API_HASH: ${API_HASH}
+      BOT_TOKEN: ${BOT_TOKEN}
+      DATABASE: ${MONGODB_URI}
+      LICENSE_KEY: ${LICENSE_KEY}
+      AUTH_SERVER_URL: http://auth-server:8000
+    depends_on:
+      - auth-server
+
+volumes:
+  postgres_data:
